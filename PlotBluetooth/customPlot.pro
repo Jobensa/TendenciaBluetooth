@@ -25,7 +25,7 @@ SOURCES += \
 
 HEADERS += \
     bluselector.h \
-    cbluetooth.h \
+    cbluetooth.h \    
     mainwindow.h \
     qcustomplot.h
 
