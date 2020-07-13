@@ -15,6 +15,20 @@ typedef union
     uint16_t Preset;
 }SENSAS_TIMER;
 
+
+typedef union 
+{
+  struct 
+  {
+      float valY;
+      float valX;
+  };
+  uint8_t values[16];
+  
+}user_data;
+extern  user_data data;
+
+
 /*
 extern SENSAS_TIMER tmr_test;
 extern SENSAS_TIMER tmr_serial;
