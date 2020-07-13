@@ -83,12 +83,14 @@ private:
     //QVector<double> m_VectorFileX;
     //QVector<double> m_VectorFileY;
     //CBackend *m_backend;
-    int m_indX;
+    double m_indX;
     QFile *m_file;
     bool m_run_tendencia;
     bool m_salvar;
     int m_RangePlot;
     int m_PositionX;
+
+    QLabel *statusLabel;
 
 
 

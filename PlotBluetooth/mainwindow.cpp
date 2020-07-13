@@ -16,9 +16,15 @@ MainWindow::MainWindow(QWidget *parent)
 
 
     ui->setupUi(this);
+    statusLabel=new QLabel();
+    statusLabel->setText("Estado Bluetooth");
+    statusLabel->setFrameStyle(QFrame::Panel | QFrame::Sunken);
+    ui->statusbar->addWidget(statusLabel,2);
 
     m_indX=0;
-    m_RangePlot=10000;
+    m_RangePlot=6000;
+    m_salvar=false;
+
     QString nameFile;
     nameFile="file-"+ QDateTime::currentDateTime().toString("MM-dd-yyyy-HH_mm")+".csv";
     qDebug() << nameFile;
@@ -32,7 +38,11 @@ MainWindow::MainWindow(QWidget *parent)
      connect(ui->ploter->yAxis, SIGNAL(rangeChanged(QCPRange)), this, SLOT(yAxisChanged(QCPRange)));
 
       // initialize axis range (and scroll bar positions via signals we just connected):
-      ui->ploter->xAxis->setRange(0, 10000, Qt::AlignLeft);
+      QSharedPointer<QCPAxisTickerTime> timeTicker(new QCPAxisTickerTime);
+      ui->ploter->xAxis->setTicker(timeTicker);
+      timeTicker->setTimeFormat("%h:%m:%s");
+
+      ui->ploter->xAxis->setRange(0, 60, Qt::AlignLeft);
       ui->ploter->yAxis->setRange(-1, 20, Qt::AlignBaseline);
 
       //ui->ploter->graph(0)->setData(x, y);
@@ -84,7 +94,14 @@ void MainWindow::OnNewData(float valY, float valX)
 {
     if(m_salvar)return;
 
-    m_XValues.push_back(valX);
+    static QTime time(QTime::currentTime());
+    // calculate two new data points:
+    double mSeconds = time.elapsed()/1000.0; // time elapsed since start , in seconds
+
+    //qDebug()<< time.toString("hh:mm:ss:ms");
+    //qDebug() << m_XValues.length();
+
+    m_XValues.push_back(mSeconds);
     m_YValues.push_back(valY);
 
     if(m_XValues.length()>=m_RangePlot)
@@ -95,7 +112,7 @@ void MainWindow::OnNewData(float valY, float valX)
 
         //qDebug() << "zise: "<< m_XValues.first();
         //qDebug() << "length: " << m_XValues.length();
-        m_indX++;
+        m_indX+=0.01;
 
     }
     else
@@ -154,8 +171,11 @@ void MainWindow::on_actionIniciar_triggered()
 
     QTextStream textStream(m_file);
 
+    QDateTime dt(QDateTime::currentDateTime());
+
 
      textStream << "# Archivo para alamacenamiento de datos \n\r";
+     textStream << dt.toString("dd-MM-yyyy hh:mm:ss");
      textStream << "# Value X, Value Y \n\r";
 
      m_file->close();
@@ -211,8 +231,9 @@ void MainWindow::on_actionConectar_triggered()
 
      //ui->connectButton->setEnabled(true);
 
-    ui->horizontalSlider->setMaximum(10000);
-    ui->horizontalSlider->setValue(5000);
+    ui->horizontalSlider->setMaximum(6000);
+    ui->horizontalSlider->setMinimum(200);
+    ui->horizontalSlider->setValue(3000);
 }
 
 void MainWindow::sendClicked()
@@ -245,11 +266,15 @@ void MainWindow::bluetoothDisconnected()
         devices.removeOne(blue);
         blue->deleteLater();
     }
+
+
 }
 
 void MainWindow::connected(const QString &name)
 {
     qDebug() << "Conectado A:" << name;
+    statusLabel->setStyleSheet("QLabel { background-color : white; color : green; }");
+    statusLabel->setText("Conectado: " + name);
 
     ui->actionGuardar->setEnabled(true);
     ui->menuTendencia->setEnabled(true);
@@ -272,6 +297,10 @@ void MainWindow::on_actionReiniciar_triggered()
     m_XValues.clear();
     m_YValues.clear();
     m_indX=0;
+
+    ui->actionGuardar->setEnabled(false);
+    ui->menuTendencia->setEnabled(false);
+    ui->actionReiniciar->setEnabled(false);
 }
 
 void MainWindow::on_horizontalSlider_sliderMoved(int position)
@@ -289,4 +318,9 @@ void MainWindow::on_horizontalSlider_sliderMoved(int position)
 void MainWindow::on_actionDesconectar_triggered()
 {
     m_blutooth->stopBluetooth();
+    on_actionReiniciar_triggered();
+
+    statusLabel->setStyleSheet("QLabel { background-color : white; color : red; }");
+    statusLabel->setText("Desconectado ");
+
 }

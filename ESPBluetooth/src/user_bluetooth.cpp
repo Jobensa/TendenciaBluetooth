@@ -20,34 +20,29 @@ void Task_bluetooth(void* parameter)
 
   //Bluetooth
   
-  Blynk.setDeviceName("DisproBT");
-  Blynk.begin(auth);
+  
+  //Blynk.begin(auth);
  
   connBluetooth.begin();  
+  connBluetooth.setDeviceName("SenSASdev");
  
 
   
   for(;;)
   {
        //Bluetooth
-    Blynk.run();
-
-  
-    
+    Blynk.run();    
     if(connBluetooth.available()>=3)
     {
-        
-     
+             
     }   
    
-    if(data.valY>4.99) data.valY=0.01;
-    
+    if(data.valY>4.99) data.valY=0.01;    
     data.valY+=0.001;
-
     data.valX+=1.0;    
     connBluetooth.write(data.values,sizeof(data.values));
-    
-    vTaskDelay(10);
+    delay(10); //1 ms
+   
   }
   
 }
