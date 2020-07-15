@@ -4,6 +4,7 @@
 #include "qcustomplot.h"
 #include <QVector>
 #include <QFile>
+#include <QTimer>
 
 #include <QtBluetooth/qbluetoothdeviceinfo.h>
 #include <QtBluetooth/qbluetoothlocaldevice.h>
@@ -19,10 +20,20 @@ MainWindow::MainWindow(QWidget *parent)
     statusLabel=new QLabel();
     statusLabel->setText("Estado Bluetooth");
     statusLabel->setFrameStyle(QFrame::Panel | QFrame::Sunken);
+
+    lblIndX=new QLabel();
+    lblIndX->setFrameStyle(QFrame::Panel | QFrame::Sunken);
+
     ui->statusbar->addWidget(statusLabel,2);
+    ui->statusbar->addWidget(lblIndX,3);
+
+    QTimer *tmrRefresh=new QTimer(this);
+    tmrRefresh->setInterval(100);
+    connect(tmrRefresh,&QTimer::timeout, this,&MainWindow::OnTimeout);
+    tmrRefresh->start();
 
     m_indX=0;
-    m_RangePlot=6000;
+    m_RangePlot=60000;
     m_salvar=false;
 
     QString nameFile;
@@ -89,19 +100,19 @@ void MainWindow::xAxisChanged(QCPRange range)
 void MainWindow::yAxisChanged(QCPRange range)
 {
 }
-
+/*
 void MainWindow::OnNewData(float valY, float valX)
 {
     if(m_salvar)return;
 
-    static QTime time(QTime::currentTime());
+    //static QTime time(QTime::currentTime());
     // calculate two new data points:
-    double mSeconds = time.elapsed()/1000.0; // time elapsed since start , in seconds
+    //double mSeconds = time.elapsed()/1000.0; // time elapsed since start , in seconds
 
     //qDebug()<< time.toString("hh:mm:ss:ms");
     //qDebug() << m_XValues.length();
 
-    m_XValues.push_back(mSeconds);
+    m_XValues.push_back(valX);
     m_YValues.push_back(valY);
 
     if(m_XValues.length()>=m_RangePlot)
@@ -112,7 +123,7 @@ void MainWindow::OnNewData(float valY, float valX)
 
         //qDebug() << "zise: "<< m_XValues.first();
         //qDebug() << "length: " << m_XValues.length();
-        m_indX+=0.01;
+        //m_indX+=0.001;
 
     }
     else
@@ -122,15 +133,52 @@ void MainWindow::OnNewData(float valY, float valX)
 
     }
 
+    ui->ploter->graph(0)->addData(valX,valY);
+   // ui->ploter->graph(0)->rescaleKeyAxis(true);
 
 
 
 
-    ui->ploter->graph(0)->setData(m_XValues, m_YValues);
+    //ui->ploter->graph(0)->setData(m_XValues, m_YValues);
     //ui->ploter->axisRect()->setupFullAxesBox(true);
-    ui->ploter->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
+    //ui->ploter->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
 
-    if(m_run_tendencia) ui->ploter->replot();
+
+
+
+}
+*/
+void MainWindow::OnNewData(uint16_t valY)
+{
+    if(m_salvar)return;
+
+    static double valX=0;
+    double valy=valY/1000.0;
+    valX+=0.001;
+    m_XValues.push_back(valX);
+    m_YValues.push_back(valy);
+
+    //qDebug() << valy;
+
+    if(m_XValues.length()>=m_RangePlot)
+    {
+
+
+        ui->ploter->xAxis->setRange(m_XValues.first()+m_indX,ui->ploter->xAxis->range().size(),Qt::AlignLeft);
+
+        //qDebug() << "zise: "<< m_XValues.first();
+        //qDebug() << "length: " << m_XValues.length();
+         m_indX+=0.001;
+
+    }
+    else
+    {
+
+        ui->ploter->xAxis->setRange(m_XValues.first(),ui->ploter->xAxis->range().size(), Qt::AlignLeft);
+
+    }
+
+    //ui->ploter->graph(0)->addData(valX,valy);
 
 
 }
@@ -192,6 +240,17 @@ void MainWindow::on_actionParar_triggered()
 
 }
 
+void MainWindow::OnTimeout()
+{
+
+    if(m_run_tendencia)
+    {
+        ui->ploter->graph(0)->setData(m_XValues,m_YValues);
+        ui->ploter->replot();
+    }
+    lblIndX->setText("No Datos: "+QString::number(m_XValues.length()));
+}
+
 void MainWindow::on_actionConectar_triggered()
 {
     //Bluetooth
@@ -214,7 +273,7 @@ void MainWindow::on_actionConectar_triggered()
          m_blutooth = new CBluetooth(this);
  qDebug() << "Conectando...";
 
-         connect(m_blutooth, &CBluetooth::messageReceived,
+         connect(m_blutooth, &CBluetooth::dataChanged,
                  this, &MainWindow::OnNewData);
          connect(m_blutooth, &CBluetooth::disconnected,
                  this, QOverload<>::of(&MainWindow::bluetoothDisconnected));
@@ -231,9 +290,9 @@ void MainWindow::on_actionConectar_triggered()
 
      //ui->connectButton->setEnabled(true);
 
-    ui->horizontalSlider->setMaximum(6000);
-    ui->horizontalSlider->setMinimum(200);
-    ui->horizontalSlider->setValue(3000);
+    ui->horizontalSlider->setMaximum(60);
+    ui->horizontalSlider->setMinimum(2);
+    ui->horizontalSlider->setValue(30);
 }
 
 void MainWindow::sendClicked()

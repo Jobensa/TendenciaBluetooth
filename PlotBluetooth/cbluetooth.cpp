@@ -7,10 +7,10 @@ typedef union
 {
   struct
   {
-      float valY;
-      float valX;
+      uint16_t valY;
+      uint32_t valX;
   };
-  char values[16];
+  char values[6];
 }user_data;
 
 CBluetooth::CBluetooth(QObject *parent)
@@ -62,21 +62,14 @@ void CBluetooth::readSocket()
         return;
 
     user_data data;
-    socket->read(data.values,16);
-    QDataStream out(socket);
+
+    socket->read(data.values,6);
+    //qDebug() << data.valX << data.valY ;
 
 
 
-    emit messageReceived(data.valY,data.valX);
-    //qDebug()<< "Y val: " << data.valY << "X Val: " << data.valX;
+    emit dataChanged(data.valY);
 
-    /*
-    while (socket->canReadLine()) {
-        QByteArray line = socket->readLine();
-        emit messageReceived(socket->peerName(),
-                             QString::fromUtf8(line.constData(), line.length()));
-    }
-    */
 
 }
 

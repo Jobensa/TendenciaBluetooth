@@ -35,13 +35,18 @@ private slots:
   void vertScrollBarChanged(int value);
   void xAxisChanged(QCPRange range);
   void yAxisChanged(QCPRange range);
-  void OnNewData(float valY, float valX);
+  //void OnNewData(float valY, float valX);
+  void OnNewData(uint16_t valY);
+
   void on_actionSalir_triggered();
   void on_actionGuardar_triggered();
 
   void on_actionIniciar_triggered();
 
   void on_actionParar_triggered();
+
+  //Redrow
+  void OnTimeout();
 
 
 
@@ -91,6 +96,7 @@ private:
     int m_PositionX;
 
     QLabel *statusLabel;
+    QLabel *lblIndX;
 
 
 
