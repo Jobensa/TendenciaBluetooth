@@ -10,6 +10,8 @@
 #include <QtBluetooth/qbluetoothlocaldevice.h>
 #include <QtBluetooth/qbluetoothuuid.h>
 
+#include <QLabel>
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -24,8 +26,12 @@ MainWindow::MainWindow(QWidget *parent)
     lblIndX=new QLabel();
     lblIndX->setFrameStyle(QFrame::Panel | QFrame::Sunken);
 
+    lblVoltaje=new QLabel();
+    lblVoltaje->setFrameStyle(QFrame::Panel | QFrame::Sunken);
+
     ui->statusbar->addWidget(statusLabel,2);
     ui->statusbar->addWidget(lblIndX,3);
+    ui->statusbar->addWidget(lblVoltaje,4);
 
     QTimer *tmrRefresh=new QTimer(this);
     tmrRefresh->setInterval(100);
@@ -148,17 +154,17 @@ void MainWindow::OnNewData(float valY, float valX)
 
 }
 */
-void MainWindow::OnNewData(uint16_t valY)
+void MainWindow::OnNewData(uint32_t valX, uint16_t valY)
 {
     if(m_salvar)return;
 
-    static double valX=0;
+    double valx=valX/1000.0;
     double valy=valY/1000.0;
-    valX+=0.001;
-    m_XValues.push_back(valX);
+
+    m_XValues.push_back(valx);
     m_YValues.push_back(valy);
 
-    //qDebug() << valy;
+   // qDebug() << valx << valy << lblVoltaje->text();
 
     if(m_XValues.length()>=m_RangePlot)
     {
@@ -181,6 +187,11 @@ void MainWindow::OnNewData(uint16_t valY)
     //ui->ploter->graph(0)->addData(valX,valy);
 
 
+}
+
+void MainWindow::OnNewDataBatery(double value)
+{
+    lblVoltaje->setText("Bateria: " + QString::number(value)+" V");
 }
 
 
@@ -282,6 +293,9 @@ void MainWindow::on_actionConectar_triggered()
          connect(m_blutooth, &CBluetooth::socketErrorOccurred,
                  this, &MainWindow::reactOnSocketError);
          connect(this, &MainWindow::sendMessage, m_blutooth, &CBluetooth::sendMessage);
+
+         connect(m_blutooth,&CBluetooth::bateryChanged,this, &MainWindow::OnNewDataBatery);
+
  qDebug() << "Start client";
          m_blutooth->startBluetooth(service);
 

@@ -36,8 +36,8 @@ private slots:
   void xAxisChanged(QCPRange range);
   void yAxisChanged(QCPRange range);
   //void OnNewData(float valY, float valX);
-  void OnNewData(uint16_t valY);
-
+  void OnNewData(uint32_t valX,uint16_t valY);
+  void OnNewDataBatery(double value);
   void on_actionSalir_triggered();
   void on_actionGuardar_triggered();
 
@@ -97,6 +97,7 @@ private:
 
     QLabel *statusLabel;
     QLabel *lblIndX;
+    QLabel *lblVoltaje;
 
 
 

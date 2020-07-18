@@ -8,10 +8,11 @@ typedef union
   struct
   {
       uint16_t valY;
-      uint32_t valX;
+      uint32_t valX;      
   };
-  char values[6];
+  char values[8];
 }user_data;
+
 
 CBluetooth::CBluetooth(QObject *parent)
     : QObject(parent)
@@ -63,12 +64,20 @@ void CBluetooth::readSocket()
 
     user_data data;
 
-    socket->read(data.values,6);
-    //qDebug() << data.valX << data.valY ;
+
+    socket->read(data.values,sizeof (user_data));
+   // qDebug() << data.valX << data.valY ;
+
+    if(data.valY & 0x8000)
+    {
+        emit bateryChanged((data.valY&0x0fff)*0.001221);
+    }
+    else
+    {
+        emit dataChanged(data.valX,data.valY);
+    }
 
 
-
-    emit dataChanged(data.valY);
 
 
 }

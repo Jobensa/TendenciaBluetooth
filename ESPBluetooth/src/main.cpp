@@ -1,16 +1,25 @@
 #include <Arduino.h>
-//#include <BlynkSimpleEsp32_BT.h>
+#include "cadc.h"
 #include "user.h"
 //#include <SPI.h>
 #include <BluetoothSerial.h>
 
-//#include "user_bluetooth.h"
 
-//Bluetooth
-//char auth[] = "Token";
 
-//uint8_t status_menu;
-dataI_t dataI;
+TaskHandle_t Bluetooth;
+TaskHandle_t TaskAdc;
+xSemaphoreHandle hdl_send;
+
+bool event_Voltaje;
+bool event_send;
+
+
+dataI_t bufferADC[100];
+dataI_t voltaje;
+uint8_t ind_adc;
+uint8_t ind_bluetooth;
+
+
 
 //uint16data_t value;
 
@@ -18,35 +27,114 @@ dataI_t dataI;
 BluetoothSerial SerialBT;
   
 void setup() {
-   Serial.begin(115200);
-   //Blynk.setDeviceName("SenSASbt");    
-   //connBluetooth.begin();  
-    
-  // Blynk.begin(auth);
+  Serial.begin(115200);
+  event_send=false;
+  ind_adc=0;
+  ind_bluetooth=0;
+  hdl_send= xSemaphoreCreateBinary(); //Inicialicia el semaforo
+   
+  //create a task that will be executed in the Task1code() function, with priority 1 and executed on core 0
+  xTaskCreatePinnedToCore(
+                    TaskBluetooth,   /* Task function. */
+                    "Bluetooth",     /* name of task. */
+                    10000,       /* Stack size of task */
+                    NULL,        /* parameter of the task */
+                    1,           /* priority of the task */
+                    &Bluetooth,      /* Task handle to keep track of created task */
+                    1);          /* pin task to core 0 */                  
+  delay(500); 
 
-  SerialBT.begin("SENSAS_Bt");
+  xTaskCreatePinnedToCore( TaskADC, "TaskAdc", 10000, NULL, 1, &TaskAdc,0);                 
+  delay(500); 
+
+  
   
 }
 
 void loop() 
 {
-       //Bluetooth
      
-    if(SerialBT.available()>=3)
-    {
-             
-    }   
-   
-    if(dataI.valY>4999) dataI.valY=0;    
-    dataI.valY++;  
-    dataI.valX++;     
-    SerialBT.write(dataI.values,sizeof(dataI.values));
-    
-    //Serial.println(value.value16);
-    delay(5);
-
-    //Serial.print(dataI.valY);
-    //Serial.print(" ");
-    //Serial.println(dataI.valX);
  
+}
+
+void TaskBluetooth( void * pvP )
+{
+   SerialBT.begin("SENSAS_Bt");
+   Serial.println("Task Bluetooth Init");
+
+   for(;;)
+   {
+        
+      if(SerialBT.available()>=3)
+      {
+               
+      }
+      
+      if(!event_send)continue;
+      event_send=false;
+      if(ind_bluetooth>=ind_adc)
+      {
+         ind_bluetooth=0;
+         ind_adc=0;
+      };
+
+      if(++ind_bluetooth==99)
+      {
+         ind_bluetooth=0;
+         ind_adc=0;
+      }
+         
+      SerialBT.write(bufferADC[ind_bluetooth].values,sizeof(dataI_t));
+         
+                                               
+   }
+
+}
+
+void TaskADC( void * pvP )
+{
+   CADC adc_esp;
+   uint16_t coutTickVoltage=0;
+   event_Voltaje=false;
+   uint32_t indX=0;
+   Serial.println("Task ADC Init");
+  // xSemaphoreGive(hdl_send); //Libera el semaforo para poder usarlo
+
+   portTickType xLastWakeTime;
+   for(;;)
+   {
+     
+      
+         xLastWakeTime = xTaskGetTickCount();
+         indX++;
+         
+         
+         bufferADC[ind_adc].valY=adc_esp.GetPulse();
+         bufferADC[ind_adc].valX=indX;
+         
+         //
+        
+         
+         if(++coutTickVoltage>2000)
+         {
+            coutTickVoltage=0;
+            bufferADC[ind_adc].valY=0x8000+adc_esp.GetVoltage();
+            bufferADC[ind_adc].valX++;       
+         
+         }
+
+        
+         if(++ind_adc>99)
+         {
+            ind_adc=0;
+            Serial.print("IndADC: "); Serial.println(ind_adc); 
+            Serial.print("IndBlu: "); Serial.println(ind_bluetooth);
+         }
+         event_send=true;
+         vTaskDelayUntil(&xLastWakeTime,3);
+
+   }
+         
+   
+
 }

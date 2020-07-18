@@ -34,9 +34,9 @@ typedef union
   struct 
   {
       uint16_t valY;
-      uint32_t valX;
+      uint32_t valX;      
   };
-  uint8_t values[6];
+  uint8_t values[8];
   
 }dataI_t;
 extern  dataI_t dataI;
@@ -53,12 +53,7 @@ typedef union
 }dataF_t;
 extern  dataF_t dataF;
 
+void TaskBluetooth( void * pvP );
+void TaskADC( void * pvP );
 
-/*
-extern SENSAS_TIMER tmr_test;
-extern SENSAS_TIMER tmr_serial;
-extern SENSAS_TIMER tmr_rtc;
-*/
-//extern RTC_Micros rtc;
-extern String DateTimeWiFi;
 #endif
